@@ -1,0 +1,5 @@
+device_utilization:
+  name: treadmill
+  entities:
+    - sensor.treadmill_utilization
+    - sensor.em16_b4_current

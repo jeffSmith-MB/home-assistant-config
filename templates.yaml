@@ -1,0 +1,87 @@
+  - sensor:
+      - name: "Furnace Filter Days Remaining"
+        unique_id: furnace_filter_days_remaining
+        unit_of_measurement: "days"
+        state: >
+          {% set last = states('input_datetime.furnace_filter_last_changed') %}
+          {% if last not in ['unknown','unavailable','none',''] %}
+            {% set last_date = as_datetime(last).date() %}
+            {% set next_due = last_date + timedelta(days=90) %}
+            {% set remaining = next_due - now().date() %}
+            {{ [remaining.days, -30] | max }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      - name: "Furnace Filter Days Raw"
+        unique_id: furnace_filter_days_raw
+        state: >
+          {% set last = states('input_datetime.furnace_filter_last_changed') %}
+          {% if last not in ['unknown','unavailable','none',''] %}
+            {% set last_date = as_datetime(last).date() %}
+            {% set next_due = last_date + timedelta(days=90) %}
+            {{ (next_due - now().date()).days }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      - name: "Furnace Filter Debug Raw"
+        unique_id: furnace_filter_debug_raw
+        state: "{{ states('input_datetime.furnace_filter_last_changed') }}"
+
+      - name: "Furnace Filter Debug Date"
+        unique_id: furnace_filter_debug_date
+        state: >
+          {% set last = states('input_datetime.furnace_filter_last_changed') %}
+          {% if last not in ['unknown','unavailable','none',''] %}
+            {{ as_datetime(last).date() }}
+          {% else %}
+            unavailable
+          {% endif %}
+
+      - name: "Furnace Template Test Sensor"
+        unique_id: template_test_sensor
+        state: "Template file loaded OK"
+
+      - name: "Today Friendly"
+        unique_id: today_friendly
+        state: "{{ now().strftime('%A, %B %-d') }}"
+
+#      - name: "Treadmill Utilization"
+#        unique_id: treadmill_utilization
+#        unit_of_measurement: "%"
+#        state: >
+#          {% set current = states('sensor.em16_b4_current') | float(0) %}
+#          {% set breaker = 20 %}
+#          {% set max = breaker * 0.8 %}
+#          {{ ((current / max) * 100) | round(1) if max > 0 else 0 }}
+
+  - binary_sensor:
+      - name: "Gym Occupied"
+        unique_id: gym_occupied
+        device_class: occupancy
+        state: >
+          {{ is_state('binary_sensor.hue_motion_sensor_3_motion', 'on') }}
+        delay_off:
+          minutes: 3
+
+      - name: "Theatre Lights Available"
+        unique_id: theatre_lights_available
+        state: >
+          {% set lights = [
+            'light.ceiling_light',
+            'light.hall_light',
+            'light.wall_light'
+          ] %}
+          {{ lights | select('is_state', 'unavailable') | list | count == 0 }}
+
+      - name: "Master Bedroom Lights Available"
+        unique_id: master_bedroom_lights_available
+        state: >
+          {% set lights = [
+            'light.bedroom1',
+            'light.bedroom2',
+            'light.bedroom3'
+          ] %}
+          {{ lights | select('is_state', 'unavailable') | list | count == 0 }}
+

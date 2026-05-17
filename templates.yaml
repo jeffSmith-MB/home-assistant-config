@@ -47,14 +47,62 @@
         unique_id: today_friendly
         state: "{{ now().strftime('%A, %B %-d') }}"
 
-#      - name: "Treadmill Utilization"
-#        unique_id: treadmill_utilization
-#        unit_of_measurement: "%"
-#        state: >
-#          {% set current = states('sensor.em16_b4_current') | float(0) %}
-#          {% set breaker = 20 %}
-#          {% set max = breaker * 0.8 %}
-#          {{ ((current / max) * 100) | round(1) if max > 0 else 0 }}
+      - name: "Treadmill Utilization"
+        unique_id: treadmill_utilization
+        unit_of_measurement: "%"
+        state: >
+          {% set current = states('sensor.em16_b4_current') | float(0) %}
+          {% set breaker = 20 %}
+          {% set max = breaker * 0.8 %}
+          {{ ((current / max) * 100) | round(1) if max > 0 else 0 }}
+
+## Gym Occupied Timer
+  - trigger:
+      - platform: state
+        entity_id: binary_sensor.gym_occupied
+        to: "on"
+    sensor:
+      - name: Gym Last Occupied Start
+        device_class: timestamp
+        state: "{{ now() }}"
+
+  - trigger:
+      - platform: state
+        entity_id: binary_sensor.gym_occupied
+        to: "off"
+    sensor:
+      - name: Gym Last Occupied End
+        device_class: timestamp
+        state: "{{ now() }}"
+
+  - trigger:
+      - platform: time_pattern
+        minutes: "/1"
+      - platform: state
+        entity_id: binary_sensor.gym_occupied
+        
+    sensor:
+      - name: Gym Occupied Duration
+        unit_of_measurement: min
+        state: >
+          {% set start = states.sensor.gym_last_occupied_start.state %}
+          {% if is_state('binary_sensor.gym_occupied', 'on') and start not in ['unknown','unavailable',''] %}
+            {{ ((now() - as_datetime(start)).total_seconds() // 60) | int }}
+            {{ [duration - 3, 0] | max }}
+          {% else %}
+            0
+          {% endif %}
+
+      - name: Gym Last Duration
+        unit_of_measurement: min
+        state: >
+          {% set start = states.sensor.gym_last_occupied_start.state %}
+          {% set end = states.sensor.gym_last_occupied_end.state %}
+          {% if start not in ['unknown','unavailable',''] and end not in ['unknown','unavailable',''] %}
+            {{ ((as_datetime(end) - as_datetime(start)).total_seconds() // 60) | int }}
+          {% else %}
+            0
+          {% endif %}
 
   - binary_sensor:
       - name: "Gym Occupied"
@@ -84,4 +132,6 @@
             'light.bedroom3'
           ] %}
           {{ lights | select('is_state', 'unavailable') | list | count == 0 }}
+          
+
 

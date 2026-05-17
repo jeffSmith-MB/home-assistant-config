@@ -18,7 +18,3 @@ scene: !include scenes.yaml
 template: !include templates.yaml
 
 
-logger:
-  logs:
-    homeassistant.components.refoss: debug
-

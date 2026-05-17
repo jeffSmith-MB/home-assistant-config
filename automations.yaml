@@ -105,7 +105,6 @@
     action: light.turn_off
     data: {}
   mode: single
-- id: '1776033197114'
   alias: Outdoor Lights On After Sunset
   description: ''
   triggers:
@@ -159,3 +158,54 @@
     target:
       device_id: 7d0be17758df36232b54ec19129a15bf
   mode: restart
+  
+  
+- id: '1776034000001'
+  alias: Master Bedroom Lights Restore
+  description: Restore bedroom lights when power returns
+
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.master_bedroom_lights_available
+      from: "off"
+      to: "on"
+
+  conditions:
+    - condition: time
+      weekday:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+
+  actions:
+    - choose:
+
+        # 4:00 AM - 6:00 AM
+        - conditions:
+            - condition: time
+              after: "04:00:00"
+              before: "06:00:00"
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.master_bedroom
+              data:
+                brightness_pct: 50
+
+        # 6:00 AM - 10:00 PM
+        - conditions:
+            - condition: time
+              after: "06:00:00"
+              before: "22:00:00"
+          sequence:
+            - action: light.turn_on
+              target:
+                entity_id: light.master_bedroom
+              data:
+                brightness_pct: 100
+
+      default: []
+
+  mode: single

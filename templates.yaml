@@ -63,6 +63,7 @@
         to: "on"
     sensor:
       - name: Gym Last Occupied Start
+        unique_id: gym_last_occupied_start
         device_class: timestamp
         state: "{{ now() }}"
 
@@ -72,34 +73,39 @@
         to: "off"
     sensor:
       - name: Gym Last Occupied End
+        unique_id: gym_last_occupied_end
         device_class: timestamp
         state: "{{ now() }}"
 
   - trigger:
-      - platform: time_pattern
-        minutes: "/1"
-      - platform: state
-        entity_id: binary_sensor.gym_occupied
-        
+    - platform: time_pattern
+      minutes: "/1"
+    - platform: state
+      entity_id: binary_sensor.gym_occupied
+
     sensor:
       - name: Gym Occupied Duration
+        unique_id: gym_occupied_duration
         unit_of_measurement: min
         state: >
-          {% set start = states.sensor.gym_last_occupied_start.state %}
+          {% set start = states('sensor.gym_last_occupied_start') %}
           {% if is_state('binary_sensor.gym_occupied', 'on') and start not in ['unknown','unavailable',''] %}
-            {{ ((now() - as_datetime(start)).total_seconds() // 60) | int }}
-            {{ [duration - 3, 0] | max }}
+            {{ max(0, ((now().timestamp() - as_timestamp(start)) / 60) | round(0) | int) }}
           {% else %}
             0
           {% endif %}
 
       - name: Gym Last Duration
+        unique_id: gym_last_occupied_duration
         unit_of_measurement: min
         state: >
-          {% set start = states.sensor.gym_last_occupied_start.state %}
-          {% set end = states.sensor.gym_last_occupied_end.state %}
-          {% if start not in ['unknown','unavailable',''] and end not in ['unknown','unavailable',''] %}
-            {{ ((as_datetime(end) - as_datetime(start)).total_seconds() // 60) | int }}
+          {% set start = states('sensor.gym_last_occupied_start') %}
+          {% set end = states('sensor.gym_last_occupied_end') %}
+          {% set start_ts = as_timestamp(start, default=none) %}
+          {% set end_ts = as_timestamp(end, default=none) %}
+
+          {% if start_ts and end_ts %}
+            {{ max(0, ((end_ts - start_ts) / 60) | int) }}
           {% else %}
             0
           {% endif %}
